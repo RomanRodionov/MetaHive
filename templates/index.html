@@ -1,16 +1,15 @@
 {% extends "base.html" %}
 
 {% block content %}
-<a href="/add_news">Добавить новость</a>
-{% if admin %}
-<a href="/admin">Info</a>
-{% endif %}
 {% for item in news %}
     <div class="alert alert-dark" role="alert">
-        <h2>{{item[1]}}</h2>
-        <h5>{{item[4]}}</h5>
-        <div>{{item[2]}}</div>
+        <h6>{{item[-1]}} опубликовал(а) запись</h6>
+        <h4>{{item[1]}}</h4>
+        <h6>{{item[4]}}</h6>
+        <h7>{{item[2]}}</h7>
+        {% if session['user_id'] == item[3] %}
         <a href="/delete_news/{{item[0]}}">Удалить новость</a>
+        {% endif %}
     </div>
 {% endfor %}
 {% endblock %}

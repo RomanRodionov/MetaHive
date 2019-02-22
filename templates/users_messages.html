@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% for item in users_mes %}
+    <div class="alert alert-dark" role="alert">
+        <h5>{{item[1]}}</h5>
+        <a href="/messages/{{item[0]}}">Открыть сообщения</a>
+    </div>
+{% endfor %}
+{% endblock %}
