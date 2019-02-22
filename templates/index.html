@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block content %}
+<a href="/add_news">Добавить новость</a>
+{% if admin %}
+<a href="/admin">Info</a>
+{% endif %}
+{% for item in news %}
+    <div class="alert alert-dark" role="alert">
+        <h2>{{item[1]}}</h2>
+        <h5>{{item[4]}}</h5>
+        <div>{{item[2]}}</div>
+        <a href="/delete_news/{{item[0]}}">Удалить новость</a>
+    </div>
+{% endfor %}
+{% endblock %}

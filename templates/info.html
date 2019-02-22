@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% if admin %}
+<a href="/admin">Info</a>
+<a href="/index">Главная</a>
+{% for item in table %}
+    <div class="alert alert-dark" role="alert">
+        <h4>{{item[0]}}</h4>
+        <div>{{item[1]}}</div>
+    </div>
+{% endfor %}
+{% endif %}
+{% endblock %}
