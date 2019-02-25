@@ -64,7 +64,7 @@ class NewsModel():
                              title VARCHAR(100),
                              content VARCHAR(1000),
                              user_id INTEGER,
-                             date DATE
+                             datetime DATETIME
                              )''')
         cursor.close()
         self.connection.commit()
@@ -72,24 +72,24 @@ class NewsModel():
     def insert(self, title, content, user_id):
         cursor = self.connection.cursor()
         cursor.execute('''INSERT INTO news 
-                          (title, content, user_id, date) 
-                          VALUES (?,?,?,?)''', (title, content, str(user_id), datetime.date.today()))
+                          (title, content, user_id, datetime) 
+                          VALUES (?,?,?,?)''', (title, content, str(user_id), datetime.datetime.now()))
         cursor.close()
         self.connection.commit()
 
     def get(self, news_id):
         cursor = self.connection.cursor()
-        cursor.execute("SELECT * FROM news WHERE id = ? ORDER BY date, title", (str(news_id)))
+        cursor.execute("SELECT * FROM news WHERE id = ? ORDER BY datetime, title", (str(news_id)))
         row = cursor.fetchone()
         return row
 
     def get_all(self, user_id=None):
         cursor = self.connection.cursor()
         if user_id:
-            cursor.execute("SELECT * FROM news WHERE user_id = ? ORDER BY date, title",
+            cursor.execute("SELECT * FROM news WHERE user_id = ? ORDER BY datetime, title",
                            (str(user_id)))
         else:
-            cursor.execute("SELECT * FROM news ORDER by date, title")
+            cursor.execute("SELECT * FROM news ORDER by datetime, title")
         rows = cursor.fetchall()
         return rows
 

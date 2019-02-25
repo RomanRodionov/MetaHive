@@ -5,7 +5,7 @@
     <div class="alert alert-dark" role="alert">
         <h6>{{item[-1]}} опубликовал(а) запись</h6>
         <h4>{{item[1]}}</h4>
-        <h6>{{item[4]}}</h6>
+        <h6>{{item[4][:-10]}}</h6>
         <h7>{{item[2]}}</h7>
         {% if session['user_id'] == item[3] %}
         <a href="/delete_news/{{item[0]}}">Удалить новость</a>

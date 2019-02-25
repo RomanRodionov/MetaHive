@@ -167,15 +167,15 @@ def user_page():
     if 'username' not in session:
         return redirect('/login')
     users = UsersModel(db.get_connection())
-    news1 = NewsModel(db.get_connection()).get_all()
+    news1 = NewsModel(db.get_connection()).get_all(session['user_id'])
     news = []
     for i in news1:
         news.append(list(i) + [users.get(i[3])[1]])
     return render_template('index.html', username=session['username'],
                            news=news, admin=session['username'] == 'admin')
 
-@app.route('/set_icon/{int:id}', methods=['GET', 'POST'])
-def set_icon(id):
+@app.route('/set_icon/{int:user_id}', methods=['GET', 'POST'])
+def set_icon(user_id):
     if 'username' not in session:
         return redirect('/login')
     form = PhotoForm()
@@ -183,7 +183,7 @@ def set_icon(id):
         f = form.photo.data
         filename = secure_filename(f.filename)
         if filename.split('.')[-1] in ['png', 'jpeg', 'jpg', 'gif']:
-            f.save('/static/images/icons/{}'.format(str(id) + filename.split()[-1]))
+            f.save('/static/images/icons/{}'.format(str(user_id) + filename.split()[-1]))
             return redirect('/user_page')
     return render_template('set_icon.html', form=form)
 
