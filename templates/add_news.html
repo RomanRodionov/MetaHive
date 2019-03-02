@@ -22,7 +22,15 @@
                 </div>
             {% endfor %}
         </p>
-        <p> {{ form.image() }} </p>
+        <p>
+            {{ form.image.label }}<br>
+            {{ form.image }}<br>
+                        {% for error in form.image.errors %}
+                <div class="alert alert-danger" role="alert">
+                    {{ error }}
+                </div>
+            {% endfor %}
+        </p>
         <p>{{ form.submit() }}</p>
     </form>
 {% endblock %}

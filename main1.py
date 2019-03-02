@@ -1,7 +1,7 @@
 from flask import Flask, render_template, redirect, session, url_for
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField
-from flask_wtf.file import FileField, FileRequired
+from flask_wtf.file import FileField, FileRequired, FileAllowed
 from wtforms.validators import DataRequired
 from werkzeug.utils import secure_filename
 import sqlite3
@@ -19,11 +19,9 @@ db = SQLAlchemy(app)
 class Images(db.Model):
     id = db.Column(db.Integer,primary_key=True)
     data = db.Column(db.BLOB, nullable=False)
-    news_id = db.Column(db.Integer, nullable=False)
-
     def __repr__(self):
-        return '<User {} {} {}>'.format(
-            self.id, self.data, self.news_id)
+        return '<User {} {}>'.format(
+            self.id, self.data)
 
 
 class User(db.Model):
@@ -42,6 +40,7 @@ class News(db.Model):
     content = db.Column(db.String(1000), unique=False, nullable=False)
     user_id = db.Column(db.Integer, nullable=False)
     date_time = db.Column(db.DateTime, unique=False, nullable=False)
+    image_id = db.Column(db.Integer)
 
     def __repr__(self):
         return '<News {} {} {} {} {}>'.format(
@@ -75,7 +74,7 @@ class RegForm(FlaskForm):
 class AddNewsForm(FlaskForm):
     title = StringField('Заголовок новости', validators=[DataRequired()])
     content = TextAreaField('Текст новости', validators=[DataRequired()])
-    image = FileField('Загрузить изображение', validators=[DataRequired()])
+    image = FileField('Загрузить изображение', validators=[DataRequired(), FileAllowed(['jpg', 'jpeg', 'png'], 'Images only!')])
     submit = SubmitField('Добавить')
 
 class MessageForm(FlaskForm):
@@ -163,23 +162,28 @@ def add_news():
         return redirect('/login')
     form = AddNewsForm()
     if form.validate_on_submit():
-        title = form.title.data
-        content = form.content.data
-        news = News(title=title,
-                    content=content,
-                    user_id=session['user_id'],
-                    date_time=datetime.datetime.now())
-        db.session.add(news)
-        db.session.commit()
-        file = form.image.data
-        if file:
-            newFile = Images(
-                data=file.read(),
-                news_id=news.id
-            )
-            print('q')
-            db.session.add(newFile)
-            db.session.commit()
+
+        # file = form.image.data
+        # if file:
+        #     newFile = Images(
+        #         data=file.read()
+        #     )
+        #     db.session.add(newFile)
+        #     db.session.commit()
+        # else:
+        #     class Object():
+        #         pass
+        #     newFile = Object()
+        #     newFile.id = 0
+        # title = form.title.data
+        # content = form.content.data
+        # news = News(title=title,
+        #             content=content,
+        #             user_id=session['user_id'],
+        #             date_time=datetime.datetime.now(),
+        #             image_id=newFile.id)
+        # db.session.add(news)
+        # db.session.commit()
         return redirect("/index")
     return render_template('add_news.html', title='Добавление новости',
                            form=form, username=session['username'])
