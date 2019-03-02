@@ -1,16 +1,8 @@
 import sqlite3
 import datetime
+from flask_sqlalchemy import SQLAlchemy
 
-class DB:
-    def __init__(self):
-        conn = sqlite3.connect('news.db', check_same_thread=False)
-        self.conn = conn
 
-    def get_connection(self):
-        return self.conn
-
-    def __del__(self):
-        self.conn.close()
 
 class UsersModel():
     def __init__(self, connection):
@@ -48,7 +40,7 @@ class UsersModel():
 
     def exists(self, user_name, password_hash=False):
         cursor = self.connection.cursor()
-        cursor.execute("SELECT * FROM users WHERE user_name = ? AND password_hash = ?",
+        cursor.execute("SELECT user_id FROM users WHERE user_name = ? AND password_hash = ?",
                        (user_name, password_hash))
         row = cursor.fetchone()
         return (True, row[0]) if row else (False,)

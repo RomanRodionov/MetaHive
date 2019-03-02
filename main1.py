@@ -1,16 +1,64 @@
-from db import *
 from flask import Flask, render_template, redirect, session, url_for
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField
 from flask_wtf.file import FileField, FileRequired
 from wtforms.validators import DataRequired
 from werkzeug.utils import secure_filename
+import sqlite3
+import datetime
+from flask_sqlalchemy import SQLAlchemy
 import os
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'
-db = DB()
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
 
+
+class Images(db.Model):
+    id = db.Column(db.Integer,primary_key=True)
+    data = db.Column(db.BLOB, nullable=False)
+    news_id = db.Column(db.Integer, nullable=False)
+
+    def __repr__(self):
+        return '<User {} {} {}>'.format(
+            self.id, self.data, self.news_id)
+
+
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password_hash = db.Column(db.String(120), unique=False, nullable=False)
+
+    def __repr__(self):
+        return '<User {} {} {}>'.format(
+            self.id, self.username, self.password_hash)
+
+
+class News(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(80), unique=False, nullable=False)
+    content = db.Column(db.String(1000), unique=False, nullable=False)
+    user_id = db.Column(db.Integer, nullable=False)
+    date_time = db.Column(db.DateTime, unique=False, nullable=False)
+
+    def __repr__(self):
+        return '<News {} {} {} {} {}>'.format(
+            self.id, self.title, self.content, self.user_id, self.date_time)
+
+class Message(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    content = db.Column(db.String(1000), unique=False, nullable=False)
+    id_from = db.Column(db.Integer, nullable=False)
+    id_to = db.Column(db.Integer, nullable=False)
+    date_time = db.Column(db.DateTime, unique=False, nullable=False)
+
+    def __repr__(self):
+        return '<News {} {} {} {} {}>'.format(
+            self.id,self.content, self.id_from, self.id_to, self.date_time)
+
+db.create_all()
 
 class LoginForm(FlaskForm):
     username = StringField('Логин', validators=[DataRequired()])
@@ -27,6 +75,7 @@ class RegForm(FlaskForm):
 class AddNewsForm(FlaskForm):
     title = StringField('Заголовок новости', validators=[DataRequired()])
     content = TextAreaField('Текст новости', validators=[DataRequired()])
+    image = FileField('Загрузить изображение', validators=[DataRequired()])
     submit = SubmitField('Добавить')
 
 class MessageForm(FlaskForm):
@@ -44,10 +93,12 @@ def reg():
     if form.validate_on_submit():
         user_name = form.username.data
         password = form.password.data
-        user_model = UsersModel(db.get_connection())
-        exists = user_model.exists(user_name)
-        if not (exists[0]) and user_name != 'admin':
-            user_model.insert(user_name, password)
+        f = User.query.filter_by(username=user_name).first()
+        if not f and user_name != 'admin':
+            user = User(username=user_name,
+                                        password_hash=password)
+            db.session.add(user)
+            db.session.commit()
             # exists = user_model.exists(user_name, password)
             # session['username'] = user_name
             # session['user_id'] = exists[1]
@@ -61,11 +112,11 @@ def login():
     if form.validate_on_submit():
         user_name = form.username.data
         password = form.password.data
-        user_model = UsersModel(db.get_connection())
-        exists = user_model.exists(user_name, password)
-        if (exists[0]):
+        f = User.query.filter_by(username=user_name, password_hash = password).first()
+        if f:
             session['username'] = user_name
-            session['user_id'] = exists[1]
+            session['user_id'] = f.id
+
         return redirect("/index")
     return render_template('login.html', title='Авторизация', form=form)
 
@@ -82,30 +133,30 @@ def logout():
 def index():
     if 'username' not in session:
         return redirect('/login')
-    users = UsersModel(db.get_connection())
-    news1 = NewsModel(db.get_connection()).get_all()
+    news1 = reversed(News.query.order_by(News.date_time).all())
+    print(news1)
     news = []
     for i in news1:
-        news.append(list(i) + [users.get(i[3])[1]])
+        news.append([User.query.filter_by(id=i.user_id).first().username, i.id, i.title, i.content, i.user_id, str(i.date_time)])
     return render_template('index.html', username=session['username'],
                            news=news, admin=session['username'] == 'admin')
 
 
-@app.route('/admin')
-def admin():
-    if 'username' not in session:
-        return redirect('/login')
-    table = []
-    users = UsersModel(db.get_connection()).get_all()
-    news = NewsModel(db.get_connection())
-    for user in users:
-        data_user = news.get_all(user[0])
-        print(data_user)
-        table.append([user[1], len(data_user)])
-    return render_template('info.html', username=session['username'],
-                           table=table, admin=session['username'] == 'admin')
-
-
+# @app.route('/admin')
+# def admin():
+#     if 'username' not in session:
+#         return redirect('/login')
+#     table = []
+#     users = UsersModel(db.get_connection()).get_all()
+#     news = NewsModel(db.get_connection())
+#     for user in users:
+#         data_user = news.get_all(user[0])
+#         print(data_user)
+#         table.append([user[1], len(data_user)])
+#     return render_template('info.html', username=session['username'],
+#                            table=table, admin=session['username'] == 'admin')
+#
+#
 @app.route('/add_news', methods=['GET', 'POST'])
 def add_news():
     if 'username' not in session:
@@ -114,8 +165,21 @@ def add_news():
     if form.validate_on_submit():
         title = form.title.data
         content = form.content.data
-        nm = NewsModel(db.get_connection())
-        nm.insert(title, content, session['user_id'])
+        news = News(title=title,
+                    content=content,
+                    user_id=session['user_id'],
+                    date_time=datetime.datetime.now())
+        db.session.add(news)
+        db.session.commit()
+        file = form.image.data
+        if file:
+            newFile = Images(
+                data=file.read(),
+                news_id=news.id
+            )
+            print('q')
+            db.session.add(newFile)
+            db.session.commit()
         return redirect("/index")
     return render_template('add_news.html', title='Добавление новости',
                            form=form, username=session['username'])
@@ -125,75 +189,68 @@ def add_news():
 def messages(id_to):
     if 'username' not in session:
         return redirect('/login')
-    messages = MessagesModel(db.get_connection()).get_all(session['user_id'], id_to)
-    user_name = UsersModel(db.get_connection()).get(id_to)[1]
+    messages = reversed(Message.query.filter((Message.id_to == session['user_id'] and Message.id_from == id_to) | (Message.id_to == id_to and Message.id_from == session['user_id'])).order_by(Message.date_time).all())
     data = []
     for i in messages:
-        message = [i[0], i[1], i[2], UsersModel(db.get_connection()).get(i[1])[1], i[3], i[4][:-7]]
+        message = [i.id, i.id_from, i.id_to, User.query.filter(User.id == id_to).first().username, i.content, str(i.date_time)[:-7]]
         data.append(message)
     form = MessageForm()
     if form.validate_on_submit():
         content = form.content.data
-        nm = MessagesModel(db.get_connection())
-        nm.insert(session['user_id'], id_to, content)
+        nm = Message(content=content, id_from=session['user_id'], id_to=id_to, date_time=datetime.datetime.now())
+        db.session.add(nm)
+        db.session.commit()
         return redirect("/messages/{}".format(str(id_to)))
     return render_template('messages.html', messages=data,
-                           form=form, username=session['username'], user=user_name)
+                           form=form, username=session['username'], user=User.query.filter(User.id==id_to).first().username)
 
 
 @app.route('/users_messages')
 def users_messages():
     if 'username' not in session:
         return redirect('/login')
-    users = UsersModel(db.get_connection()).get_all()
+    users = User.query.all()
     users_mes = []
     for i in users:
-        if i[1] != session['username']:
-            users_mes.append([i[0], i[1]])
+        if i.username != session['username']:
+            users_mes.append([i.id, i.username])
     return render_template('users_messages.html', username=session['username'],
                            users_mes=users_mes, admin=session['username'] == 'admin')
-
-
-@app.route('/delete_news/<int:news_id>', methods=['GET'])
-def delete_news(news_id):
-    if 'username' not in session:
-        return redirect('/login')
-    nm = NewsModel(db.get_connection())
-    nm.delete(news_id)
-    return redirect("/index")
-
-@app.route('/user_page')
-def user_page():
-    if 'username' not in session:
-        return redirect('/login')
-    users = UsersModel(db.get_connection())
-    news1 = NewsModel(db.get_connection()).get_all(session['user_id'])
-    news = []
-    for i in news1:
-        news.append(list(i) + [users.get(i[3])[1]])
-    return render_template('index.html', username=session['username'],
-                           news=news, admin=session['username'] == 'admin')
-
-@app.route('/set_icon/{int:user_id}', methods=['GET', 'POST'])
-def set_icon(user_id):
-    if 'username' not in session:
-        return redirect('/login')
-    form = PhotoForm()
-    if form.validate_on_submit():
-        f = form.photo.data
-        filename = secure_filename(f.filename)
-        if filename.split('.')[-1] in ['png', 'jpeg', 'jpg', 'gif']:
-            f.save('/static/images/icons/{}'.format(str(user_id) + filename.split()[-1]))
-            return redirect('/user_page')
-    return render_template('set_icon.html', form=form)
+#
+#
+# @app.route('/delete_news/<int:news_id>', methods=['GET'])
+# def delete_news(news_id):
+#     if 'username' not in session:
+#         return redirect('/login')
+#     nm = NewsModel(db.get_connection())
+#     nm.delete(news_id)
+#     return redirect("/index")
+#
+# @app.route('/user_page')
+# def user_page():
+#     if 'username' not in session:
+#         return redirect('/login')
+#     users = UsersModel(db.get_connection())
+#     news1 = NewsModel(db.get_connection()).get_all(session['user_id'])
+#     news = []
+#     for i in news1:
+#         news.append(list(i) + [users.get(i[3])[1]])
+#     return render_template('index.html', username=session['username'],
+#                            news=news, admin=session['username'] == 'admin')
+#
+# @app.route('/set_icon/{int:user_id}', methods=['GET', 'POST'])
+# def set_icon(user_id):
+#     if 'username' not in session:
+#         return redirect('/login')
+#     form = PhotoForm()
+#     if form.validate_on_submit():
+#         f = form.photo.data
+#         filename = secure_filename(f.filename)
+#         if filename.split('.')[-1] in ['png', 'jpeg', 'jpg', 'gif']:
+#             f.save('/static/images/icons/{}'.format(str(user_id) + filename.split()[-1]))
+#             return redirect('/user_page')
+#     return render_template('set_icon.html', form=form)
 
 
 if __name__ == '__main__':
-    db = DB()
-    user_model = UsersModel(db.get_connection())
-    user_model.init_table()
-    news_model = NewsModel(db.get_connection())
-    news_model.init_table()
-    messages_model = MessagesModel(db.get_connection())
-    messages_model.init_table()
     app.run(port=8080, host='127.0.0.1')
