@@ -3,6 +3,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField
 from flask_wtf.file import FileField, FileRequired, FileAllowed
 from wtforms.validators import DataRequired
+from random import randint
 from werkzeug.utils import secure_filename
 import sqlite3
 import datetime
@@ -18,7 +19,7 @@ db = SQLAlchemy(app)
 
 class Images(db.Model):
     id = db.Column(db.Integer,primary_key=True)
-    data = db.Column(db.BLOB, nullable=False)
+    data = db.Column(db.String(80), nullable=False)
     def __repr__(self):
         return '<User {} {}>'.format(
             self.id, self.data)
@@ -28,10 +29,11 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(120), unique=False, nullable=False)
+    avatar_id = db.Column(db.Integer)
 
     def __repr__(self):
-        return '<User {} {} {}>'.format(
-            self.id, self.username, self.password_hash)
+        return '<User {} {} {} {}>'.format(
+            self.id, self.username, self.password_hash, self.avatar_id)
 
 
 class News(db.Model):
@@ -69,12 +71,13 @@ class RegForm(FlaskForm):
     username = StringField('Логин', validators=[DataRequired()])
     password = PasswordField('Пароль', validators=[DataRequired()])
     remember_me = BooleanField('Запомнить меня')
+    image = FileField('Загрузить аватар', validators=[FileAllowed(['jpg', 'jpeg', 'png'], 'Images only!')])
     submit = SubmitField('Зарегистрироваться')
 
 class AddNewsForm(FlaskForm):
     title = StringField('Заголовок новости', validators=[DataRequired()])
     content = TextAreaField('Текст новости', validators=[DataRequired()])
-    image = FileField('Загрузить изображение', validators=[DataRequired(), FileAllowed(['jpg', 'jpeg', 'png'], 'Images only!')])
+    image = FileField('Загрузить изображение', validators=[FileAllowed(['jpg', 'jpeg', 'png'], 'Images only!')])
     submit = SubmitField('Добавить')
 
 class MessageForm(FlaskForm):
@@ -85,6 +88,12 @@ class PhotoForm(FlaskForm):
     photo = FileField('Загрузить иконку', validators=[FileRequired()])
 
 
+def generate_number():
+    num = ''
+    for _ in range(10):
+        num += str(randint(0, 9))
+    return num
+
 
 @app.route('/reg', methods=['GET', 'POST'])
 def reg():
@@ -94,8 +103,27 @@ def reg():
         password = form.password.data
         f = User.query.filter_by(username=user_name).first()
         if not f and user_name != 'admin':
+            file = form.image.data
+            if file:
+                name = 'static/images/icons/{}'.format(generate_number() + file.filename)
+                newFile = Images(
+                    data=name
+                )
+                file.save(name)
+                db.session.add(newFile)
+                db.session.commit()
+            else:
+                name = 'static/images/icons/avatar.jpg'
+                newFile = Images(
+                    data=name
+                )
+                file.save(name)
+                db.session.add(newFile)
+                db.session.commit()
             user = User(username=user_name,
-                                        password_hash=password)
+                        password_hash=password,
+                        avatar_id=newFile.id
+                        )
             db.session.add(user)
             db.session.commit()
             # exists = user_model.exists(user_name, password)
@@ -135,8 +163,15 @@ def index():
     news1 = reversed(News.query.order_by(News.date_time).all())
     print(news1)
     news = []
+#    user_avatar = Images.query.filter_by(id=User.query.filter_by(id=session('user_id')).first().avatar_id).first().data
     for i in news1:
-        news.append([User.query.filter_by(id=i.user_id).first().username, i.id, i.title, i.content, i.user_id, str(i.date_time)])
+        avatar = Images.query.filter_by(id=User.query.filter_by(id=i.user_id).first().avatar_id).first().data
+        image = Images.query.filter_by(id=i.image_id).first()
+        if image:
+            image = image.data
+        else:
+            image = 0
+        news.append([User.query.filter_by(id=i.user_id).first().username, i.id, i.title, i.content, i.user_id, str(i.date_time), image, avatar])
     return render_template('index.html', username=session['username'],
                            news=news, admin=session['username'] == 'admin')
 
@@ -162,28 +197,29 @@ def add_news():
         return redirect('/login')
     form = AddNewsForm()
     if form.validate_on_submit():
-
-        # file = form.image.data
-        # if file:
-        #     newFile = Images(
-        #         data=file.read()
-        #     )
-        #     db.session.add(newFile)
-        #     db.session.commit()
-        # else:
-        #     class Object():
-        #         pass
-        #     newFile = Object()
-        #     newFile.id = 0
-        # title = form.title.data
-        # content = form.content.data
-        # news = News(title=title,
-        #             content=content,
-        #             user_id=session['user_id'],
-        #             date_time=datetime.datetime.now(),
-        #             image_id=newFile.id)
-        # db.session.add(news)
-        # db.session.commit()
+        file = form.image.data
+        if file:
+            name = 'static/images/news/{}'.format(generate_number() + file.filename)
+            newFile = Images(
+                data=name
+            )
+            file.save(name)
+            db.session.add(newFile)
+            db.session.commit()
+        else:
+            class Object():
+                pass
+            newFile = Object()
+            newFile.id = 0
+        title = form.title.data
+        content = form.content.data
+        news = News(title=title,
+                    content=content,
+                    user_id=session['user_id'],
+                    date_time=datetime.datetime.now(),
+                    image_id=newFile.id)
+        db.session.add(news)
+        db.session.commit()
         return redirect("/index")
     return render_template('add_news.html', title='Добавление новости',
                            form=form, username=session['username'])
@@ -222,14 +258,16 @@ def users_messages():
                            users_mes=users_mes, admin=session['username'] == 'admin')
 #
 #
-# @app.route('/delete_news/<int:news_id>', methods=['GET'])
-# def delete_news(news_id):
-#     if 'username' not in session:
-#         return redirect('/login')
-#     nm = NewsModel(db.get_connection())
-#     nm.delete(news_id)
-#     return redirect("/index")
-#
+@app.route('/delete_news/<int:news_id>', methods=['GET'])
+def delete_news(news_id):
+    print(news_id)
+    if 'username' not in session:
+        return redirect('/login')
+    news = News.query.filter_by(id=news_id).first()
+    db.session.delete(news)
+    db.session.commit()
+    return redirect("/index")
+
 # @app.route('/user_page')
 # def user_page():
 #     if 'username' not in session:

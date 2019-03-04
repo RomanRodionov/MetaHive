@@ -2,7 +2,7 @@
 
 {% block content %}
     <h1>Регистрация</h1>
-    <form action="" method="post" novalidate>
+    <form action="" method="post" enctype="multipart/form-data">
         {{ form.hidden_tag() }}
         <p>
             {{ form.username.label }}<br>
@@ -17,6 +17,15 @@
             {{ form.password.label }}<br>
             {{ form.password }}<br>
             {% for error in form.password.errors %}
+                <div class="alert alert-danger" role="alert">
+                    {{ error }}
+                </div>
+            {% endfor %}
+        </p>
+        <p>
+            {{ form.image.label }}<br>
+            {{ form.image }}<br>
+                        {% for error in form.image.errors %}
                 <div class="alert alert-danger" role="alert">
                     {{ error }}
                 </div>

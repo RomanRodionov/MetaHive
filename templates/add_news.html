@@ -2,7 +2,28 @@
 
 {% block content %}
     <h1>Добавление новости</h1>
-    <form action="" method="post" novalidate>
+    <!--<form method="post">-->
+                                <!--<input type="text" class="form-control" id="title" placeholder="Заголовок" name="title">-->
+                                <!--<div class="form-group">-->
+                                    <!--<label for="about">О чем вы хотите рассказать</label>-->
+                                    <!--<textarea class="form-control" id="about" rows="3" name="about"></textarea>-->
+                                <!--</div>-->
+                                <!--<div class="form-group">-->
+                                    <!--<label for="photo">Фото</label>-->
+                                    <!--<input type="file" class="form-control-file" id="photo" name="file">-->
+                                <!--</div>-->
+                                <!--<div class="form-group">-->
+                                    <!--<label for="form-check">Укажите пол</label>-->
+                                    <!--<div class="form-check">-->
+                                      <!--<input class="form-check-input" type="radio" name="sex" id="male" value="male" checked>-->
+                                      <!--<label class="form-check-label" for="male">-->
+                                        <!--Мужской-->
+                                      <!--</label>-->
+                                    <!--</div>-->
+                                <!--</div>-->
+                                <!--<button type="submit" class="btn btn-primary">Записаться</button>-->
+                            <!--</form>-->
+    <form action="" method="post" enctype="multipart/form-data">
         {{ form.hidden_tag() }}
         <p>
             {{ form.title.label }}<br>
