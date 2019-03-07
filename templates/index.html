@@ -2,15 +2,16 @@
 
 {% block content %}
 {% for item in news %}
-    <div class="alert alert-dark" role="alert" style="width: 55%; position: relative;
-    left: 50%;
-    transform: translate(-50%);">
+    <div class="alert alert-dark alert-custom" role="alert">
           <button type="button" class="close" data-dismiss="alert" aria-label="Close">
     <span aria-hidden="true">&times;</span>
   </button>
-        <h6> <img src="{{item[7]}}" alt="Avatar" class="avatar"> {{item[0]}} опубликовал(а) запись</h6>
+        <h6> <a href="/user_page/{{item[4]}}" style="text-decoration: none;">
+            <img src="{{item[7]}}" alt="Avatar" class="avatar">
+            </a>
+            {{item[0]}} опубликовал{% if item[8] == 'female'%}а{%endif%} запись</h6>
         <h4>{{item[2]}}</h4>
-        <h6>{{item[3]}}</h6>
+        <p>{{item[3]}}</p>
         {% if item[6] != 0 %}
         <!--<div>-->
         <!--<img src="{{item[6]}}" style="width: 60%;">-->
@@ -18,7 +19,7 @@
         <div>
         <a href="{{item[6]}}">
           <img alt="picture" src="{{item[6]}}"
-            class="thumbnail" style="width: 90%;">
+            class="thumbnail" style="max-width: 90%;">
         </a>
         </div>
         {% endif %}

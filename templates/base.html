@@ -15,27 +15,93 @@
     <style type="text/css">
    .avatar {
   vertical-align: middle;
-  width: 50px;
-  height: 50px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
+    border: 3px solid #1E90FF;
+    box-shadow: 0 0 7px #1E90FF;
 }
+    .big_avatar {
+  vertical-align: middle;
+  width: 300px;
+  height: 300px;
+  border-radius: 15px;
+  border: 3px solid #1E90FF;
+    box-shadow: 0 0 7px #1E90FF;
+}
+   td {
+    padding: 5px;
+    vertical-align: top;
+   }
+   body {
+    background-image: url(/static/images/design/bg.png);
+   }
+   .alert-custom{
+  background-color:#9ACD32;
+  color:#fff;
+  border: 3px solid #1E90FF;
+    box-shadow: 0 0 7px #1E90FF;
+    width: 55%; position: relative;
+    left: 50%;
+    transform: translate(-50%);
+    word-wrap: break-word;
+}
+.alert-user{
+  background-color:#32CD32;
+  color:#fff;
+  border: 3px solid #1E90FF;
+    box-shadow: 0 0 7px #1E90FF;
+    width: 55%; position: relative;
+    left: 50%;
+    transform: translate(-50%);
+    word-wrap: break-word;
+}
+.button{
+  background-color:#32CD32;
+  color:#fff;
+  border: 2px solid #228B22;
+  box-shadow: 0 0 5px #005400;
+}
+.text_form{
+  background-color:#fff;
+  border: 2px solid #228B22;
+  box-shadow: 0 0 5px #005400;
+}
+.message_form{
+  background-color:#fff;
+  border: 2px solid #228B22;
+  box-shadow: 0 0 5px #005400;
+  width: 80%; position: relative;
+    left: 10%;
+    transform: translate(-10%);
+}
+hr{
+border: 1px solid rgb(255, 255, 255);
+}
+
   </style>
 
 </head>
 <body>
 {% if "username" in session %}
-<nav class="navbar navbar-expand-lg navbar-light" style="background-color: #e3f2fd; z-index: 1; position: fixed; top: 0px; width: 100%;">
+<nav class="navbar navbar-expand-lg navbar-light" style="background-color: #7CFC00; z-index: 1; position: fixed; top: 0px; width: 100%;">
     <a class="navbar-brand">MetaHive</a>
   <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
     <span class="navbar-toggler-icon"></span>
   </button>
   <div class="collapse navbar-collapse" id="navbarSupportedContent">
     <ul class="navbar-nav mr-auto">
+        <li class="nav-item">
+        <a class="nav-link" href="/user_page/{{session['user_id']}}">Моя страница<span class="sr-only">(current)</span></a>
+      </li>
       <li class="nav-item">
         <a class="nav-link" href="/index">Новости<span class="sr-only">(current)</span></a>
       </li>
       <li class="nav-item">
         <a class="nav-link" href="/users_messages">Сообщения</a>
+      </li>
+        <li class="nav-item">
+        <a class="nav-link" href="/friends">Друзья<span class="sr-only">(current)</span></a>
       </li>
         <li class="nav-item">
         <a class="nav-link" href="/add_news">Добавить новость</a>
@@ -57,11 +123,13 @@
     </ul>
   </div>
     <ul class="nav navbar-nav navbar-right">
-        <li><a class="navbar-brand" href="/user_page">{{session['username']}}</a></li>
+        <li><a class="navbar-brand" href="/user_page/{{session['user_id']}}">{{session['username']}}</a></li>
     </ul>
 </nav>
 {% else %}
-<a class="navbar-brand">MetaHive</a>
+<nav class="navbar navbar-expand-lg navbar-light" style="background-color: #7CFC00; z-index: 1; position: fixed; top: 0px; width: 100%;">
+    <a class="navbar-brand">MetaHive</a>
+</nav>
 {% endif %}
 <div style="position: relative; top: 48px;">
 {% block content%} {% endblock %}

@@ -1,5 +1,52 @@
 {% extends "base.html" %}
 
 {% block content %}
-
+<div class="alert alert-primary alert-user" role="alert" style="width: 55%; position: relative;
+            left: 50%;
+            transform: translate(-50%);">
+    <table>
+      <tr>
+        <td>
+              <img src="/{{avatar}}" alt="User_avatar" class="big_avatar">
+        </td>
+          <td style="color:#fff;">
+              <h2>{{profile_name}}</h2>
+              {% if session['user_id'] != user_id %}
+                <a href='/make_friend/{{ user_id }}'>{% if make %}
+                    Добавить в друзья
+                  {% else %}
+                    Удалить из друзей
+                  {% endif %}
+                    </a>
+              {% endif %}
+          </td>
+      </tr>
+    </table>
+</div>
+{% for item in news %}
+    <div class="alert alert-dark alert-custom" role="alert">
+          <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+    <span aria-hidden="true">&times;</span>
+  </button>
+        <h6> <img src="/{{item[7]}}" alt="Avatar" class="avatar"> {{item[0]}} опубликовал{% if item[8] == 'female'%}а{%endif%} запись</h6>
+        <h4>{{item[2]}}</h4>
+        <h6>{{item[3]}}</h6>
+        {% if item[6] != 0 %}
+        <!--<div>-->
+        <!--<img src="{{item[6]}}" style="width: 60%;">-->
+        <!--</div>-->
+        <div>
+        <a href="/{{item[6]}}">
+          <img alt="picture" src="/{{item[6]}}"
+            class="thumbnail" style="width: 90%;">
+        </a>
+        </div>
+        {% endif %}
+        <hr>
+        <h7>{{item[5][:-10]}}</h7>
+        {% if session['user_id'] == item[4] %}
+        <a href="/delete_news/{{item[1]}}">Удалить запись</a>
+        {% endif %}
+    </div>
+{% endfor %}
 {% endblock %}

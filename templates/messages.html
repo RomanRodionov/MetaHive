@@ -1,25 +1,27 @@
 {% extends "base.html" %}
 
 {% block content %}
+<div class="alert alert-dark alert-custom" role="alert">
 <h3>Переписка с пользователем {{user}}</h3>
 <form action="" method="post" novalidate>
         {{ form.hidden_tag() }}
         <p>
             {{ form.content.label }}<br>
-            {{ form.content }}<br>
+            {{ form.content(class_='message_form') }}<br>
             {% for error in form.content.errors %}
                 <div class="alert alert-danger" role="alert">
                     {{ error }}
                 </div>
             {% endfor %}
         </p>
-        <p>{{ form.submit() }}</p>
+        <p>{{ form.submit(class_='button') }}</p>
     </form>
 {% for item in messages %}
-    <div class="alert alert-dark" role="alert">
+    <div class="alert alert-dark" role="alert" style="background-color: #87CEEB;">
         <h5>{{item[3]}}</h5>
         <h6>{{item[4]}}</h6>
         <h8>{{item[5]}}</h8>
     </div>
 {% endfor %}
+    </div>
 {% endblock %}
