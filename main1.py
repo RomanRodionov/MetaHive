@@ -14,14 +14,6 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 api = Api(app)
 db = SQLAlchemy(app)
 
-parser = reqparse.RequestParser()
-parser.add_argument('title', required=False)
-parser.add_argument('content', required=False)
-parser.add_argument('user_id', required=False, type=int)
-parser.add_argument('user_name', required=False)
-parser.add_argument('password_hash', required=False)
-parser.add_argument('image_id', required=False, type=int)
-
 
 class Images(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -82,10 +74,87 @@ class Message(db.Model):
 
 db.create_all()
 
+parser = reqparse.RequestParser()
+
 
 def abort_if_news_not_found(news_id):
-    if not User.query.filter_by(id=news_id):
+    if not News.query.filter_by(id=news_id).first():
         abort(404, message="News {} not found".format(news_id))
+
+
+def abort_if_user_not_found(id):
+    if not User.query.filter_by(id=id).first():
+        abort(404, message="User {} not found".format(id))
+
+
+class NewsApi(Resource):
+    def get(self, news_id):
+        abort_if_news_not_found(news_id)
+        news = News.query.filter_by(id=news_id)
+        return jsonify({'news': str(news)})
+
+    def delete(self, news_id):
+        if not News.query.filter_by(id=news_id).first():
+            return jsonify({'success': 'Wrong id'})
+        abort_if_news_not_found(news_id)
+        news = News.query.filter_by(id=news_id).first()
+        db.session.delete(news)
+        db.session.commit()
+        return jsonify({'success': 'OK'})
+
+
+class NewsApiList(Resource):
+    parser = reqparse.RequestParser()
+    parser.add_argument('title', required=True)
+    parser.add_argument('content', required=True)
+
+    def get(self):
+        news = News.query.all()
+        return jsonify({'news': str(news)})
+
+    def post(self):
+        args = self.parser.parse_args()
+        news = News(title=args.get('title', False),
+                    content=args.get('content', False),
+                    user_id=session['user_id'],
+                    date_time=datetime.datetime.now(),
+                    image_id=0)
+        db.session.add(news)
+        db.session.commit()
+        return jsonify({'success': 'OK'})
+
+
+class UsersApi(Resource):
+    parser = reqparse.RequestParser()
+    parser.add_argument('user_name', required=True)
+    parser.add_argument('status', required=True)
+    parser.add_argument('gender', required=True)
+
+    def get(self, id):
+        abort_if_user_not_found(id)
+        users = User.query.filter_by(id=id).first()
+        return jsonify({'users': str(users)})
+
+    def put(self, id):
+        args = self.parser.parse_args()
+        User.query.filter_by(id=id).first().gender = args.get('gender', False)
+        User.query.filter_by(id=id).first().username = args.get('user_name', False)
+        User.query.filter_by(id=id).first().about = args.get('status', False)
+        db.session.commit()
+        return jsonify({'success': 'OK'})
+
+
+class UsersApiList(Resource):
+    def get(self):
+        users = User.query.all()
+        print(users)
+        return jsonify({'users': str(users)})
+
+
+api.add_resource(NewsApiList, '/news', '/')
+api.add_resource(NewsApi, '/news/<int:news_id>', '/<int:news_id>')
+api.add_resource(UsersApiList, '/users')
+api.add_resource(UsersApi, '/users/<int:id>', '/<int:id>')
 
 
 def generate_number():
@@ -177,7 +246,8 @@ def index():
             else:
                 image = 0
             news.append(
-                [User.query.filter_by(id=i.user_id).first().username, i.id, i.title, i.content, i.user_id, str(i.date_time),
+                [User.query.filter_by(id=i.user_id).first().username, i.id, i.title, i.content, i.user_id,
+                 str(i.date_time),
                  image, avatar, gender])
     return render_template('index.html', username=session['username'],
                            news=news, admin=session['username'] == 'admin')
@@ -378,7 +448,8 @@ def profile(user_id):
             news.append([User.query.filter_by(id=i.user_id).first().username, i.id, i.title, i.content, i.user_id,
                          str(i.date_time), image, avatar, gender])
     return render_template('user_page.html', profile_name=user_name, username=session['username'],
-                           news=news, admin=session['username'] == 'admin', avatar=avatar, user_id=user_id, make=make, status=status)
+                           news=news, admin=session['username'] == 'admin', avatar=avatar, user_id=user_id, make=make,
+                           status=status)
 
 
 @app.route('/edit_profile/<int:user_id>', methods=['GET', 'POST'])
