@@ -2,10 +2,7 @@
 
 {% block content %}
 {% for item in people %}
-    <div class="alert alert-dark alert-custom" role="alert">
-          <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-    <span aria-hidden="true">&times;</span>
-  </button>
+    <div class="alert alert-dark alert-friend" role="alert">
         <h6> <a href="/user_page/{{item[0]}}" style="text-decoration: none;">
             <img src="{{item[2]}}" alt="Avatar" class="avatar">
             </a>

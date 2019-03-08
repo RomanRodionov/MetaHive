@@ -1,14 +1,10 @@
 from flask import Flask, render_template, redirect, session, url_for, jsonify
-from flask_wtf import FlaskForm
-from wtforms import IntegerField, StringField, PasswordField, BooleanField, SubmitField, TextAreaField, RadioField
-from flask_wtf.file import FileField, FileRequired, FileAllowed
-from wtforms.validators import DataRequired
 from random import randint
-from werkzeug.utils import secure_filename
 import sqlite3
 import datetime
 from flask_sqlalchemy import SQLAlchemy
 from flask_restful import reqparse, abort, Api, Resource
+from forms import *
 import os
 
 app = Flask(__name__)
@@ -17,6 +13,14 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 api = Api(app)
 db = SQLAlchemy(app)
+
+parser = reqparse.RequestParser()
+parser.add_argument('title', required=False)
+parser.add_argument('content', required=False)
+parser.add_argument('user_id', required=False, type=int)
+parser.add_argument('user_name', required=False)
+parser.add_argument('password_hash', required=False)
+parser.add_argument('image_id', required=False, type=int)
 
 
 class Images(db.Model):
@@ -34,7 +38,7 @@ class Friends(db.Model):
     user2 = db.Column(db.Integer)
 
     def __repr__(self):
-        return '<Friends {} {}>'.format(
+        return '<Friends {} {} {}>'.format(
             self.id, self.user1, self.user2)
 
 
@@ -47,8 +51,8 @@ class User(db.Model):
     about = db.Column(db.String(256), unique=False)
 
     def __repr__(self):
-        return '<User {} {} {} {} {} {}>'.format(
-            self.id, self.username, self.password_hash, self.avatar_id, self.age, self.gender, self.about)
+        return '<User {} {} {} {} {}>'.format(
+            self.id, self.username, self.password_hash, self.avatar_id, self.gender, self.about)
 
 
 class News(db.Model):
@@ -83,37 +87,6 @@ def abort_if_news_not_found(news_id):
     if not User.query.filter_by(id=news_id):
         abort(404, message="News {} not found".format(news_id))
 
-
-class LoginForm(FlaskForm):
-    username = StringField('Логин', validators=[DataRequired()])
-    password = PasswordField('Пароль', validators=[DataRequired()])
-    remember_me = BooleanField('Запомнить меня')
-    submit = SubmitField('Войти')
-
-
-class RegForm(FlaskForm):
-    username = StringField('Логин', validators=[DataRequired()])
-    password = PasswordField('Пароль', validators=[DataRequired()])
-    gender = RadioField('Пол', choices=[('male', 'Мужчина'), ('female', 'Женщина')])
-    remember_me = BooleanField('Запомнить меня')
-    image = FileField('Загрузить аватар', validators=[FileAllowed(['jpg', 'jpeg', 'png'], 'Images only!')])
-    submit = SubmitField('Зарегистрироваться')
-
-
-class AddNewsForm(FlaskForm):
-    title = StringField('Заголовок', validators=[DataRequired()])
-    content = TextAreaField('О чем вы хотите рассказать', validators=[DataRequired()])
-    image = FileField('Загрузить изображение', validators=[FileAllowed(['jpg', 'jpeg', 'png'], 'Images only!')])
-    submit = SubmitField('Добавить')
-
-
-class MessageForm(FlaskForm):
-    content = TextAreaField('Сообщение:', validators=[DataRequired()])
-    submit = SubmitField('Отправить')
-
-
-class PhotoForm(FlaskForm):
-    photo = FileField('Загрузить иконку', validators=[FileRequired()])
 
 def generate_number():
     num = ''
@@ -157,9 +130,6 @@ def reg():
                         )
             db.session.add(user)
             db.session.commit()
-            # exists = user_model.exists(user_name, password)
-            # session['username'] = user_name
-            # session['user_id'] = exists[1]
         return redirect("/index")
     return render_template('registration.html', title='Регистрация', form=form)
 
@@ -195,35 +165,24 @@ def index():
     news = []
     #    user_avatar = Images.query.filter_by(id=User.query.filter_by(id=session('user_id')).first().avatar_id).first().data
     for i in news1:
-        avatar = Images.query.filter_by(id=User.query.filter_by(id=i.user_id).first().avatar_id).first().data
-        gender = User.query.filter_by(id=i.user_id).first().gender
-        image = Images.query.filter_by(id=i.image_id).first()
-        if image:
-            image = image.data
-        else:
-            image = 0
-        news.append(
-            [User.query.filter_by(id=i.user_id).first().username, i.id, i.title, i.content, i.user_id, str(i.date_time),
-             image, avatar, gender])
+        user = User.query.filter_by(id=i.user_id).first()
+        friend = Friends.query.filter(((Friends.user1 == user.id) & (Friends.user2 == session['user_id'])) | (
+            (Friends.user2 == user.id) & (Friends.user1 == session['user_id']))).first()
+        if friend:
+            avatar = Images.query.filter_by(id=User.query.filter_by(id=i.user_id).first().avatar_id).first().data
+            gender = User.query.filter_by(id=i.user_id).first().gender
+            image = Images.query.filter_by(id=i.image_id).first()
+            if image:
+                image = image.data
+            else:
+                image = 0
+            news.append(
+                [User.query.filter_by(id=i.user_id).first().username, i.id, i.title, i.content, i.user_id, str(i.date_time),
+                 image, avatar, gender])
     return render_template('index.html', username=session['username'],
                            news=news, admin=session['username'] == 'admin')
 
 
-# @app.route('/admin')
-# def admin():
-#     if 'username' not in session:
-#         return redirect('/login')
-#     table = []
-#     users = UsersModel(db.get_connection()).get_all()
-#     news = NewsModel(db.get_connection())
-#     for user in users:
-#         data_user = news.get_all(user[0])
-#         print(data_user)
-#         table.append([user[1], len(data_user)])
-#     return render_template('info.html', username=session['username'],
-#                            table=table, admin=session['username'] == 'admin')
-#
-#
 @app.route('/add_news', methods=['GET', 'POST'])
 def add_news():
     if 'username' not in session:
@@ -263,11 +222,18 @@ def add_news():
 def messages(id_to):
     if 'username' not in session:
         return redirect('/login')
-    messages = reversed(Message.query.filter((Message.id_to == session['user_id'] and Message.id_from == id_to) | (
-        Message.id_to == id_to and Message.id_from == session['user_id'])).order_by(Message.date_time).all())
+    messages = reversed(Message.query.filter(((Message.id_to == session['user_id']) & (Message.id_from == id_to)) | ((
+                                                                                                                         Message.id_to == id_to) & (
+                                                                                                                         Message.id_from ==
+                                                                                                                         session[
+                                                                                                                             'user_id']))).order_by(
+        Message.date_time).all())
     data = []
     for i in messages:
-        message = [i.id, i.id_from, i.id_to, User.query.filter(User.id == id_to).first().username, i.content,
+        name = User.query.filter(User.id == i.id_from).first().username
+        if name == session['username']:
+            name = 'Вы'
+        message = [i.id, i.id_from, i.id_to, name, i.content,
                    str(i.date_time)[:-7]]
         data.append(message)
     form = MessageForm()
@@ -289,7 +255,9 @@ def users_messages():
     users = User.query.all()
     users_mes = []
     for i in users:
-        if i.username != session['username']:
+        friend = Friends.query.filter(((Friends.user1 == i.id) & (Friends.user2 == session['user_id'])) | (
+            (Friends.user2 == i.id) & (Friends.user1 == session['user_id']))).first()
+        if i.username != session['username'] and friend:
             users_mes.append([i.id, i.username])
     return render_template('users_messages.html', username=session['username'],
                            users_mes=users_mes, admin=session['username'] == 'admin')
@@ -311,7 +279,8 @@ def make_friend(user_id):
         return redirect('/login')
     f1 = Friends.query.filter_by(user1=session['user_id'], user2=user_id).first()
     f2 = Friends.query.filter_by(user1=user_id, user2=session['user_id']).first()
-    if not f1 or f2:
+    print(f1, f2)
+    if not (f1 or f2):
         friends = Friends(
             user1=session['user_id'],
             user2=user_id)
@@ -335,12 +304,51 @@ def friends():
     people = []
     for i in users:
         if i.id != session['user_id']:
-            friend = Friends.query.filter((Friends.user1==i.id) | (Friends.user2==i.id)).first()
+            friend = Friends.query.filter(((Friends.user1 == i.id) & (Friends.user2 == session['user_id'])) | (
+                (Friends.user2 == i.id) & (Friends.user1 == session['user_id']))).first()
             if friend:
                 avatar = Images.query.filter_by(id=i.avatar_id).first().data
                 people.append([i.id, i.username, avatar])
     return render_template('friends.html', username=session['username'],
                            people=people, admin=session['username'] == 'admin')
+
+
+def is_same_name(name1, name2):
+    return name2.lower() in name1.lower()
+
+
+@app.route('/find_friends', methods=['GET', 'POST'])
+def find_friends():
+    if 'username' not in session:
+        return redirect('/login')
+    users = User.query.all()
+    people1 = []
+    people2 = []
+    people = []
+    res = False
+    form = FindFriendsForm()
+    if form.validate_on_submit():
+        name = form.name.data
+        for i in users:
+            if i.id != session['user_id'] and is_same_name(i.username, name):
+                friend = Friends.query.filter(((Friends.user1 == i.id) & (Friends.user2 == session['user_id'])) | (
+                    (Friends.user2 == i.id) & (Friends.user1 == session['user_id']))).first()
+                if not friend:
+                    res = True
+                    avatar = Images.query.filter_by(id=i.avatar_id).first().data
+                    people1.append([i.id, i.username, avatar])
+                    people.append(i)
+    users = User.query.all()
+    for i in users:
+        if (i.id != session['user_id']) and (i not in people):
+            friend = Friends.query.filter(((Friends.user1 == i.id) & (Friends.user2 == session['user_id'])) | (
+                (Friends.user2 == i.id) & (Friends.user1 == session['user_id']))).first()
+            if not friend:
+                avatar = Images.query.filter_by(id=i.avatar_id).first().data
+                people2.append([i.id, i.username, avatar])
+    print(people1)
+    return render_template('find_friends.html', username=session['username'], form=form, people1=people1,
+                           people2=people2, admin=session['username'] == 'admin', res=res)
 
 
 @app.route('/user_page/<int:user_id>', methods=['GET', 'POST'])
@@ -351,7 +359,7 @@ def profile(user_id):
     news = []
     user_name = User.query.filter_by(id=user_id).first().username
     avatar = Images.query.filter_by(id=User.query.filter_by(id=user_id).first().avatar_id).first().data
-    #    user_avatar = Images.query.filter_by(id=User.query.filter_by(id=session('user_id')).first().avatar_id).first().data
+    status = User.query.filter_by(id=user_id).first().about
     f1 = Friends.query.filter_by(user1=session['user_id'], user2=user_id).first()
     f2 = Friends.query.filter_by(user1=session['user_id'], user2=user_id).first()
     if f1 or f2:
@@ -369,10 +377,36 @@ def profile(user_id):
                 image = 0
             news.append([User.query.filter_by(id=i.user_id).first().username, i.id, i.title, i.content, i.user_id,
                          str(i.date_time), image, avatar, gender])
-    print(make)
     return render_template('user_page.html', profile_name=user_name, username=session['username'],
-                           news=news, admin=session['username'] == 'admin', avatar=avatar, user_id=user_id, make=make)
+                           news=news, admin=session['username'] == 'admin', avatar=avatar, user_id=user_id, make=make, status=status)
 
+
+@app.route('/edit_profile/<int:user_id>', methods=['GET', 'POST'])
+def edit_profile(user_id):
+    if 'username' not in session:
+        return redirect('/login')
+    form = EditProfileForm()
+    if form.validate_on_submit():
+        User.query.filter_by(id=user_id).first().gender = form.gender.data
+        file = form.image.data
+        if file:
+            name = 'static/images/news/{}'.format(generate_number() + file.filename)
+            newFile = Images(
+                data=name
+            )
+            file.save(name)
+            db.session.add(newFile)
+            db.session.commit()
+            User.query.filter_by(id=user_id).first().avatar_id = newFile.id
+        if form.username.data:
+            User.query.filter_by(id=user_id).first().username = form.username.data
+        if form.status.data:
+            User.query.filter_by(id=user_id).first().about = form.status.data
+
+        db.session.commit()
+        return redirect("/user_page/{}".format(user_id))
+    return render_template('edit_profile.html', title='Редактирование учетной записи',
+                           form=form, username=session['username'])
 
 
 if __name__ == '__main__':

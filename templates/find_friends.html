@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="alert alert-dark alert-friend" role="alert">
+    <form action="" method="post">
+        {{ form.hidden_tag() }}
+        <p>
+            {{ form.name.label }}<br>
+            {{ form.name(class_='text_form') }}<br>
+            {% for error in form.name.errors %}
+                <div class="alert alert-danger" role="alert">
+                    {{ error }}
+                </div>
+            {% endfor %}
+        </p>
+        <p>{{ form.submit(class_='button') }}</p>
+    </form>
+</div>
+{% for item in people1 %}
+    <div class="alert alert-dark alert-friend" role="alert">
+        <h6> <a href="/user_page/{{item[0]}}" style="text-decoration: none;">
+            <img src="{{item[2]}}" alt="Avatar" class="avatar">
+            </a>
+            {{item[1]}}</h6>
+    </div>
+{% endfor %}
+<hr>
+<h5 style="position: relative; left: 45%; color: #fff;">Возможные друзья</h5>
+{% for item in people2 %}
+    <div class="alert alert-dark alert-friend" role="alert">
+        <h6> <a href="/user_page/{{item[0]}}" style="text-decoration: none;">
+            <img src="{{item[2]}}" alt="Avatar" class="avatar">
+            </a>
+            {{item[1]}}</h6>
+    </div>
+{% endfor %}
+{% endblock %}

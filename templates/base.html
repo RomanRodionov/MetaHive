@@ -1,4 +1,4 @@
-'''<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
@@ -46,6 +46,16 @@
     transform: translate(-50%);
     word-wrap: break-word;
 }
+   .alert-friend{
+  background-color:#9ACD32;
+  color:#fff;
+  border: 3px solid #1E90FF;
+    box-shadow: 0 0 7px #1E90FF;
+    width: 35%; position: relative;
+    left: 50%;
+    transform: translate(-50%);
+    word-wrap: break-word;
+}
 .alert-user{
   background-color:#32CD32;
   color:#fff;
@@ -72,6 +82,14 @@
   border: 2px solid #228B22;
   box-shadow: 0 0 5px #005400;
   width: 80%; position: relative;
+    left: 10%;
+    transform: translate(-10%);
+}
+.message{
+  background-color: #FAFAD2;
+  border: 2px solid #228B22;
+  box-shadow: 0 0 5px #005400;
+  width: 100%; position: relative;
     left: 10%;
     transform: translate(-10%);
 }
@@ -108,11 +126,10 @@ border: 1px solid rgb(255, 255, 255);
       </li>
       <li class="nav-item dropdown">
         <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-          Dropdown
+          Другое
         </a>
         <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-          <a class="dropdown-item" href="#">Action</a>
-          <a class="dropdown-item" href="#">Another action</a>
+          <a class="dropdown-item" href="/find_friends">Найти людей</a>
           <div class="dropdown-divider"></div>
             {% if admin %}
             <a class="dropdown-item" href="/admin">Info</a>
@@ -131,8 +148,8 @@ border: 1px solid rgb(255, 255, 255);
     <a class="navbar-brand">MetaHive</a>
 </nav>
 {% endif %}
-<div style="position: relative; top: 48px;">
+<div style="position: relative; top: 70px;">
 {% block content%} {% endblock %}
 </div>
 </body>
-</html>'''
+</html>

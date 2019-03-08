@@ -11,14 +11,18 @@
         </td>
           <td style="color:#fff;">
               <h2>{{profile_name}}</h2>
-              {% if session['user_id'] != user_id %}
+              <p>{% if session['user_id'] != user_id %}
                 <a href='/make_friend/{{ user_id }}'>{% if make %}
                     Добавить в друзья
                   {% else %}
                     Удалить из друзей
                   {% endif %}
-                    </a>
+                </a></p>
+              {% else %}
+              <p><a href='/edit_profile/{{ user_id }}'>Редактировать профиль</a></p>
               {% endif %}
+              {% if status %}<p>{{ status }}</p>{% endif %}
+
           </td>
       </tr>
     </table>
@@ -38,7 +42,7 @@
         <div>
         <a href="/{{item[6]}}">
           <img alt="picture" src="/{{item[6]}}"
-            class="thumbnail" style="width: 90%;">
+            class="thumbnail" style="max-width: 90%;">
         </a>
         </div>
         {% endif %}
