@@ -1,10 +1,11 @@
 {% extends "base.html" %}
 
 {% block content %}
+<h1 style="color: #fff;" align="center">Друзья пользователя {{ profile_username }}</h1>
 {% for item in people %}
     <div class="alert alert-dark alert-friend" role="alert">
         <h6> <a href="/user_page/{{item[0]}}" style="text-decoration: none;">
-            <img src="{{item[2]}}" alt="Avatar" class="avatar">
+            <img src="/{{item[2]}}" alt="Avatar" class="avatar">
             </a>
             {{item[1]}}</h6>
     </div>

@@ -9,7 +9,7 @@ import os
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 api = Api(app)
 db = SQLAlchemy(app)
@@ -151,10 +151,10 @@ class UsersApiList(Resource):
         return jsonify({'users': str(users)})
 
 
-api.add_resource(NewsApiList, '/news', '/')
-api.add_resource(NewsApi, '/news/<int:news_id>', '/<int:news_id>')
-api.add_resource(UsersApiList, '/users')
-api.add_resource(UsersApi, '/users/<int:id>', '/<int:id>')
+api.add_resource(NewsApiList, '/api/news')
+api.add_resource(NewsApi, '/api/news/<int:news_id>', '/api/<int:news_id>')
+api.add_resource(UsersApiList, '/api/users')
+api.add_resource(UsersApi, '/api/users/<int:id>')
 
 
 def generate_number():
@@ -237,7 +237,7 @@ def index():
         user = User.query.filter_by(id=i.user_id).first()
         friend = Friends.query.filter(((Friends.user1 == user.id) & (Friends.user2 == session['user_id'])) | (
             (Friends.user2 == user.id) & (Friends.user1 == session['user_id']))).first()
-        if friend:
+        if friend or i.user_id == session['user_id']:
             avatar = Images.query.filter_by(id=User.query.filter_by(id=i.user_id).first().avatar_id).first().data
             gender = User.query.filter_by(id=i.user_id).first().gender
             image = Images.query.filter_by(id=i.image_id).first()
@@ -327,7 +327,8 @@ def users_messages():
     for i in users:
         friend = Friends.query.filter(((Friends.user1 == i.id) & (Friends.user2 == session['user_id'])) | (
             (Friends.user2 == i.id) & (Friends.user1 == session['user_id']))).first()
-        if i.username != session['username'] and friend:
+        mes = Message.query.filter((Message.id_to == session['user_id']) | (Message.id_from == session['user_id'])).first()
+        if i.username != session['username'] and mes:
             users_mes.append([i.id, i.username])
     return render_template('users_messages.html', username=session['username'],
                            users_mes=users_mes, admin=session['username'] == 'admin')
@@ -366,21 +367,21 @@ def make_friend(user_id):
     return redirect("/user_page/{}".format(str(user_id)))
 
 
-@app.route('/friends')
-def friends():
+@app.route('/friends/<int:user_id>')
+def friends(user_id):
     if 'username' not in session:
         return redirect('/login')
     users = User.query.all()
     people = []
+    username = User.query.filter_by(id=user_id).first().username
     for i in users:
-        if i.id != session['user_id']:
-            friend = Friends.query.filter(((Friends.user1 == i.id) & (Friends.user2 == session['user_id'])) | (
-                (Friends.user2 == i.id) & (Friends.user1 == session['user_id']))).first()
-            if friend:
-                avatar = Images.query.filter_by(id=i.avatar_id).first().data
-                people.append([i.id, i.username, avatar])
+        friend = Friends.query.filter(((Friends.user1 == i.id) & (Friends.user2 == user_id)) | (
+            (Friends.user2 == i.id) & (Friends.user1 == user_id))).first()
+        if friend:
+            avatar = Images.query.filter_by(id=i.avatar_id).first().data
+            people.append([i.id, i.username, avatar])
     return render_template('friends.html', username=session['username'],
-                           people=people, admin=session['username'] == 'admin')
+                           people=people, admin=session['username'] == 'admin', profile_username=username)
 
 
 def is_same_name(name1, name2):

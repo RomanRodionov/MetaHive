@@ -18,9 +18,11 @@
                     Удалить из друзей
                   {% endif %}
                 </a></p>
+              <p><a href='/messages/{{ user_id }}'>Написать сообщение</a></p>
               {% else %}
               <p><a href='/edit_profile/{{ user_id }}'>Редактировать профиль</a></p>
               {% endif %}
+              <p><a href='/friends/{{ user_id }}'>Друзья</a></p>
               {% if status %}<p>{{ status }}</p>{% endif %}
 
           </td>
