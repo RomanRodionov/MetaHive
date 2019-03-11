@@ -477,6 +477,10 @@ def edit_profile(user_id):
 
         db.session.commit()
         return redirect("/user_page/{}".format(user_id))
+
+    form.username.data = User.query.filter_by(id=user_id).first().username
+    form.status.data = User.query.filter_by(id=user_id).first().about
+    form.gender.data = User.query.filter_by(id=user_id).first().gender
     return render_template('edit_profile.html', title='Редактирование учетной записи',
                            form=form, username=session['username'])
 
